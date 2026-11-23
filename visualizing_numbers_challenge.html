@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Visualizing Numbers Challenge</title>
+<style>
+:root { --navy:#17345b; --blue:#2864dc; --sky:#eaf3ff; --yellow:#ffd45a; --green:#19a66a; --red:#e45b67; --ink:#21334d; }
+* { box-sizing:border-box; }
+body { margin:0; font-family: "Trebuchet MS", Arial, sans-serif; color:var(--ink); background:linear-gradient(135deg,#eaf5ff,#f5f0ff); padding:18px; }
+.game { max-width:900px; margin:auto; background:white; border-radius:26px; box-shadow:0 14px 35px rgba(31,64,116,.14); overflow:hidden; }
+header { text-align:center; padding:26px 20px 18px; background:linear-gradient(120deg,#2864dc,#694bd7); color:white; }
+header h1 { margin:0; font-size:clamp(25px,4vw,38px); }
+header p { margin:8px 0 0; opacity:.95; }
+.topbar { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:15px 22px; background:#f7faff; flex-wrap:wrap; }
+.pill { border-radius:999px; padding:9px 14px; font-weight:700; background:#e7efff; color:#2856ad; }
+.progress { height:9px; background:#e9edf5; margin:0 22px; border-radius:20px; overflow:hidden; }
+.progress > div { height:100%; background:linear-gradient(90deg,#28c68c,#44a4ff); width:0%; transition:width .3s; }
+main { padding:24px; }
+#intro, #end { text-align:center; padding:18px 10px 28px; }
+h2 { margin:8px 0 12px; font-size:clamp(22px,3vw,30px); }
+.instructions { color:#60718a; font-size:17px; line-height:1.5; max-width:650px; margin:0 auto 22px; }
+.levels { display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin:18px 0; }
+button { border:0; border-radius:14px; padding:13px 18px; font-weight:800; font-size:16px; cursor:pointer; transition:transform .12s,filter .12s; }
+button:hover { transform:translateY(-2px); filter:brightness(1.03); }
+button:focus-visible { outline:3px solid #f2b700; outline-offset:3px; }
+.primary { background:var(--blue); color:white; }
+.secondary { background:#edf2fb; color:#28456f; }
+.level { background:#f0f5ff; border:2px solid transparent; color:#34558a; }
+.level.selected { border-color:#2864dc; background:#e1ebff; }
+#play { display:none; }
+.question { text-align:center; }
+.prompt { font-size:clamp(20px,3vw,27px); font-weight:800; margin:5px 0 18px; }
+.visual { min-height:145px; background:#f6f9ff; border:2px dashed #c8d8f2; border-radius:20px; display:flex; justify-content:center; align-items:center; gap:16px; flex-wrap:wrap; padding:18px; margin-bottom:20px; }
+.block-group { display:flex; flex-direction:column; align-items:center; gap:7px; font-weight:800; }
+.blocks { display:flex; gap:4px; flex-wrap:wrap; justify-content:center; max-width:170px; }
+.hundred { width:68px; height:68px; display:grid; grid-template-columns:repeat(10,1fr); grid-template-rows:repeat(10,1fr); gap:1px; background:#f5a623; border:2px solid #d78612; border-radius:5px; }
+.hundred span { background:#ffd46c; }
+.ten { width:16px; height:72px; display:grid; grid-template-rows:repeat(10,1fr); gap:2px; background:#38a4e8; border:2px solid #167bbd; border-radius:4px; }
+.ten span { background:#8cdbff; }
+.one { width:18px; height:18px; background:#59c98e; border:2px solid #23985e; border-radius:4px; }
+.choices { display:grid; grid-template-columns:repeat(2,minmax(120px,1fr)); gap:12px; max-width:600px; margin:0 auto; }
+.choice { background:white; border:2px solid #dbe6f6; color:#28456f; font-size:clamp(18px,2.8vw,23px); padding:17px; }
+.choice.correct { border-color:var(--green); background:#e8fff4; color:#08784a; }
+.choice.wrong { border-color:var(--red); background:#fff0f1; color:#b42d3c; }
+.feedback { min-height:34px; margin:15px 0 4px; font-weight:800; font-size:18px; }
+.feedback.good { color:var(--green); }
+.feedback.bad { color:var(--red); }
+.next { display:none; margin-top:12px; }
+footer { text-align:center; padding:14px; color:#8090a6; font-size:13px; background:#fafcff; }
+@media(max-width:520px){ body{padding:8px;} main{padding:15px;} .topbar{padding:12px;} .visual{gap:8px;} .choices{gap:8px;} button{padding:12px 14px;} }
+</style>
+</head>
+<body>
+<div class="game">
+<header>
+<h1>🔢 Visualizing Numbers Challenge</h1>
+<p>Look carefully, think mathematically, and earn stars!</p>
+</header>
+<div class="topbar">
+<div class="pill" id="score">⭐ Score: 0</div>
+<div class="pill" id="round">Question: 0 / 10</div>
+<div class="pill" id="levelLabel">Level: Easy</div>
+</div>
+<div class="progress"><div id="bar"></div></div>
+<main>
+<section id="intro">
+<h2>Ready to play?</h2>
+<p class="instructions">Choose your level. Use the blocks and number clues to answer each question. You have 10 questions in every round!</p>
+<div class="levels">
+<button class="level selected" data-level="easy">🟢 Easy · 2-digit</button>
+<button class="level" data-level="medium">🔵 Medium · 3-digit</button>
+<button class="level" data-level="hard">🟣 Hard · 4-digit</button>
+</div>
+<button class="primary" id="start">Start Game ▶</button>
+</section>
+<section id="play">
+<div class="question">
+<div class="prompt" id="prompt"></div>
+<div class="visual" id="visual"></div>
+<div class="choices" id="choices"></div>
+<div class="feedback" id="feedback" aria-live="polite"></div>
+<button class="primary next" id="next">Next Question ➜</button>
+</div>
+</section>
+<section id="end" style="display:none">
+<h2 id="endTitle">Round Complete! 🎉</h2>
+<p class="instructions" id="endText"></p>
+<button class="primary" id="again">Play Again 🔄</button>
+</section>
+</main>
+<footer>Made for Grade 3 Mathematics · Visualize, think, and learn!</footer>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+let level='easy', q=0, score=0, correctVal=0, locked=false;
+const maxQ=10;
+document.querySelectorAll('.level').forEach(btn=>btn.addEventListener('click',()=>{
+ document.querySelectorAll('.level').forEach(b=>b.classList.remove('selected'));
+ btn.classList.add('selected'); level=btn.dataset.level;
+}));
+function rand(min,max){return Math.floor(Math.random()*(max-min+1))+min}
+function numberRange(){return level==='easy'?[10,99]:level==='medium'?[100,999]:[1000,9999]}
+function parts(n){let s=String(n).padStart(level==='easy'?2:level==='medium'?3:4); return s.split('').map(Number)}
+function makeBlocks(n){
+ let digits=parts(n); let names=level==='easy'?['Tens','Ones']:level==='medium'?['Hundreds','Tens','Ones']:['Thousands','Hundreds','Tens','Ones'];
+ let out='';
+ digits.forEach((d,i)=>{
+   if(!d)return;
+   let label=names[i];
+   let art='';
+   if(label==='Hundreds') art=Array.from({length:d},()=>'<div class="hundred">'+Array.from({length:100},()=>'<span></span>').join('')+'</div>').join('');
+   if(label==='Tens') art=Array.from({length:d},()=>'<div class="ten">'+Array.from({length:10},()=>'<span></span>').join('')+'</div>').join('');
+   if(label==='Ones') art=Array.from({length:d},()=>'<div class="one"></div>').join('');
+   if(label==='Thousands') art=Array.from({length:d},()=>'<div style="width:70px;height:70px;border:3px solid #8d64df;background:#d9c8ff;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;color:#6440ad">1,000</div>').join('');
+   out+=`<div class="block-group"><div class="blocks">${art}</div><span>${d} ${label}</span></div>`;
+ });
+ return out||'<span style="font-size:22px">Zero blocks</span>';
+}
+function generate(){
+ let [min,max]=numberRange(); let n=rand(min,max); correctVal=n;
+ let type=rand(0,2), visual='', prompt='';
+ if(type===0){ prompt='What number is represented by these blocks?'; visual=makeBlocks(n); }
+ if(type===1){ prompt=`Which is the expanded form of <b>${n.toLocaleString()}</b>?`; visual=`<div style="font-size:clamp(24px,4vw,38px);font-weight:900;color:#2864dc">${n.toLocaleString()}</div>`; }
+ if(type===2){prompt=`I have ${parts(n).map((d,i)=>`${d} ${(['Thousands','Hundreds','Tens','Ones'][4-parts(n).length+i])}`).join(', ')}. What number am I?`; visual='<div style="font-size:54px">🕵️‍♀️ 🔍</div>'; }
+ $('prompt').innerHTML=prompt; $('visual').innerHTML=visual;
+ let correct;
+ if(type===0||type===2) correct=n.toLocaleString();
+ else correct=parts(n).map((d,i)=>d*10**(parts(n).length-1-i)).filter(x=>x).join(' + ');
+ let opts=[correct];
+ while(opts.length<4){
+  let wrong;
+  if(type===1){ let [a,b]=numberRange(); let m=rand(a,b); wrong=parts(m).map((d,i)=>d*10**(parts(m).length-1-i)).filter(x=>x).join(' + '); }
+  else { let delta=rand(1,Math.max(5,Math.floor(max/10))); let m=Math.max(min,Math.min(max,n+(Math.random()<.5?-delta:delta))); wrong=m.toLocaleString(); }
+  if(!opts.includes(wrong))opts.push(wrong);
+ }
+ opts.sort(()=>Math.random()-.5);
+ $('choices').innerHTML='';
+ opts.forEach(opt=>{
+  let b=document.createElement('button'); b.className='choice'; b.textContent=opt;
+  b.addEventListener('click',()=>answer(b,opt,correct)); $('choices').appendChild(b);
+ });
+ locked=false; $('feedback').textContent=''; $('feedback').className='feedback'; $('next').style.display='none';
+}
+function answer(btn,opt,correct){
+ if(locked)return; locked=true;
+ let isCorrect=opt===correct;
+ document.querySelectorAll('.choice').forEach(b=>{if(b.textContent===correct)b.classList.add('correct')});
+ if(isCorrect){score++; $('feedback').textContent='🎉 Correct! Great job!'; $('feedback').className='feedback good';}
+ else{btn.classList.add('wrong'); $('feedback').textContent=`Not quite! The correct answer is ${correct}. Try your best!`; $('feedback').className='feedback bad';}
+ $('score').textContent=`⭐ Score: ${score}`;
+ $('next').style.display='inline-block';
+}
+function update(){
+ $('round').textContent=`Question: ${q} / ${maxQ}`;
+ $('bar').style.width=`${q/maxQ*100}%`;
+}
+function start(){
+ q=0;score=0; $('intro').style.display='none';$('end').style.display='none';$('play').style.display='block';
+ $('levelLabel').textContent=`Level: ${level[0].toUpperCase()+level.slice(1)}`;
+ $('score').textContent='⭐ Score: 0'; update(); nextQuestion();
+}
+function nextQuestion(){
+ if(q>=maxQ){finish();return;}
+ q++;update();generate();
+}
+function finish(){
+ $('play').style.display='none';$('end').style.display='block';
+ let pct=score/maxQ;
+ $('endTitle').textContent=pct===1?'Perfect Score! 🏆':pct>=.7?'Great Work! 🎉':'Keep Practicing! 💪';
+ $('endText').textContent=`You got ${score} out of ${maxQ} correct (${score*10}%). ${pct>=.7?'You are becoming a number expert!':'Practice makes progress. Try another round and improve your score!'}`;
+ $('bar').style.width='100%';
+}
+$('start').addEventListener('click',start);
+$('next').addEventListener('click',nextQuestion);
+$('again').addEventListener('click',()=>{ $('end').style.display='none'; $('intro').style.display='block'; $('play').style.display='none'; $('bar').style.width='0%';});
+</script>
+</body>
+</html>
